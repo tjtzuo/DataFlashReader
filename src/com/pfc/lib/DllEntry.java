@@ -20,7 +20,7 @@ public class DllEntry {
             System.loadLibrary("dec_dll");
             System.out.println("Load DEC DLL");
         } catch (UnsatisfiedLinkError ule) {
-            System.out.println(ule);
+            System.err.println(ule);
         }
     }
 }

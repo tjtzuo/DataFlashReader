@@ -105,7 +105,7 @@ public class DataFlashReader {
                 }
             }
         } catch (IOException | ParserConfigurationException | SAXException e) {
-            System.out.println(e);
+            System.err.println(e);
         }
     }
 }

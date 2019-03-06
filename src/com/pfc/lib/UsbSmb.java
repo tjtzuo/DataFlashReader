@@ -38,7 +38,7 @@ public class UsbSmb {
             System.out.println("Information about USB SMBus");
             System.out.println("===========================");
         } catch (UnsatisfiedLinkError ule) {
-            System.out.println(ule);
+            System.err.println(ule);
         }
     }
     public UsbSmb() {
@@ -60,7 +60,7 @@ public class UsbSmb {
         byte[] pBlock = new byte[nCount + 1];
         boolean result = usbSmbRead(devIndex, addr, (byte)cmd, bPEC, pBlock.length, pBlock);
         System.arraycopy(pBlock, 1, pBuf, 0, nCount);
-        return result && pBlock[0] == nCount;
+        return result && (pBlock[0] <= nCount);
     }
     public boolean readWord(int cmd, short[] pwValue) {
         byte[] pBuf = new byte[2];

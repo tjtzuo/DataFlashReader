@@ -49,7 +49,7 @@ public class XMLParserSAX {
                 }
             }
         } catch (ParserConfigurationException | SAXException | IOException e) {
-            System.out.println(e);
+            System.err.println(e);
         }
     }
     
