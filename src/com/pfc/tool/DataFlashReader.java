@@ -33,13 +33,12 @@ public class DataFlashReader {
             SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
             SAXParser saxParser = saxParserFactory.newSAXParser();
             DataFlashHandler dfHandler = new DataFlashHandler();
-            saxParser.parse(new File("DataFlash.ini"), dfHandler);
+            saxParser.parse(new File("DataFlash.xml"), dfHandler);
 //            boolean result = DllEntry.cod128("D:\\Temp\\Default.bin");
-//            if (result);
 //            byte[] outBuf = new byte[65536];
 //            int len = DllEntry.dec64("D:\\Temp\\00_04_03_01_20.cod", outBuf);
             byte[] outBuf = new byte[2048];
-            int len = DllEntry.dec128("\\Users\\Public\\Share\\Default.bin", outBuf);
+            int len = DllEntry.dec128("Default.ifi", outBuf);
             if (len == 2048) {
                 int stradr = 0x7600;
                 //Get DataFlashCluster list
