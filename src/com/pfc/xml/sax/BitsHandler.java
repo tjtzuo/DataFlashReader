@@ -5,7 +5,6 @@
 package com.pfc.xml.sax;
 
 import com.pfc.xml.BitField;
-import com.pfc.xml.SBS;
 import java.util.ArrayList;
 import java.util.List;
 import org.xml.sax.Attributes;
