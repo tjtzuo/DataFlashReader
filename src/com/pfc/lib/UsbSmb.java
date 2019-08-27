@@ -15,6 +15,7 @@ public class UsbSmb {
     private int devIndex = -1;
     private byte addr = 0x16;
     private boolean bPEC = false;
+    private boolean bHDQ = false;
 
     public byte getAddr() {
         return addr;
@@ -30,6 +31,14 @@ public class UsbSmb {
 
     public void setPEC(boolean bPEC) {
         this.bPEC = bPEC;
+    }
+
+    public boolean isHDQ() {
+        return bHDQ;
+    }
+
+    public void setHDQ(boolean bHDQ) {
+        this.bHDQ = bHDQ;
     }
     
     static {
@@ -51,10 +60,22 @@ public class UsbSmb {
         return usbGetVersion(devIndex);
     }
     public boolean readByte(int cmd, byte[] pValue) {
-        return usbSmbRead(devIndex, addr, (byte)cmd, false, Byte.BYTES, pValue);
+        if (bHDQ && cmd < 0x80)
+            return usbHdqRead(devIndex, (byte)cmd, pValue);
+        else
+            return usbSmbRead(devIndex, addr, (byte)cmd, false, Byte.BYTES, pValue);
     }
     public boolean readBytes(int cmd, int nCount, byte[] pBuf) {
-        return usbSmbRead(devIndex, addr, (byte)cmd, false, nCount, pBuf);
+        if (bHDQ && cmd < 0x80) {
+            for (int i = 0; i < nCount; i++) {
+                byte[] pVal = new byte[1];
+                if (!usbHdqRead(devIndex, (byte) (cmd + i), pVal))
+                    return false;
+                pBuf[i] = pVal[0];
+            }
+            return true;
+        } else
+            return usbSmbRead(devIndex, addr, (byte)cmd, false, nCount, pBuf);
     }
     public boolean readBlock(int cmd, int nCount, byte[] pBuf) {
         byte[] pBlock = new byte[nCount + 1];
@@ -63,8 +84,17 @@ public class UsbSmb {
         return result && (pBlock[0] <= nCount);
     }
     public boolean readWord(int cmd, short[] pwValue) {
+        boolean result = false;
         byte[] pBuf = new byte[2];
-        boolean result = usbSmbRead(devIndex, addr, (byte)cmd, bPEC, Short.BYTES, pBuf);
+        if (bHDQ && cmd < 0x80) {
+            if (usbHdqRead(devIndex, (byte)(cmd + 1), pBuf)) {
+                pBuf[1] = pBuf[0];
+                if (usbHdqRead(devIndex, (byte)cmd, pBuf))
+                    result = true;
+            }
+        } else {
+            result = usbSmbRead(devIndex, addr, (byte)cmd, bPEC, Short.BYTES, pBuf);
+        }
         pwValue[0] = (short) (Byte.toUnsignedInt(pBuf[0]) | (pBuf[1] << 8));
         return result;
     }
@@ -73,12 +103,22 @@ public class UsbSmb {
 	return usbSmbWrite(devIndex, addr, (byte)cmd, false, 0, pBuf);
     }
     public boolean writeByte(int cmd, int val) {
-        byte[] pBuf = new byte[1];
-        pBuf[0] = (byte) val;
-        return usbSmbWrite(devIndex, addr, (byte)cmd, false, Byte.BYTES, pBuf);
+        if (bHDQ && cmd < 0x80) {
+            return usbHdqWrite(devIndex, (byte) cmd, (byte) val);
+        } else {
+            byte[] pBuf = new byte[1];
+            pBuf[0] = (byte) val;
+            return usbSmbWrite(devIndex, addr, (byte) cmd, false, Byte.BYTES, pBuf);
+        }
     }
     public boolean writeBytes(int cmd, int nCount, byte[] pBuf) {
-        return usbSmbWrite(devIndex, addr, (byte)cmd, false, nCount, pBuf);
+       if (bHDQ && cmd < 0x80) {
+            for (int i = 0; i < nCount; i++)
+                if (!usbHdqWrite(devIndex, (byte) (cmd + i), pBuf[i]))
+                    return false;
+            return true;
+        } else
+            return usbSmbWrite(devIndex, addr, (byte)cmd, false, nCount, pBuf);
     }
     public boolean writeBlock(int cmd, int nCount, byte[] pBuf) {
         byte[] pBlock = new byte[nCount + 1];
@@ -87,10 +127,18 @@ public class UsbSmb {
         return usbSmbWrite(devIndex, addr, (byte)cmd, bPEC, pBlock.length, pBlock);
     }
     public boolean writeWord(int cmd, int val) {
-        byte[] pBuf = new byte[2];
-        pBuf[0] = (byte) val;
-        pBuf[1] = (byte) (val >> 8);
-        return usbSmbWrite(devIndex, addr, (byte)cmd, bPEC, Short.BYTES, pBuf);
+        if (bHDQ && cmd < 0x80) {
+            if (usbHdqWrite(devIndex, (byte)cmd, (byte)-1))
+                if (usbHdqWrite(devIndex, (byte)(cmd + 1), (byte)(val >> 8)))
+                    if (usbHdqWrite(devIndex, (byte)cmd, (byte)val))
+                        return true;
+            return false;
+        } else {
+            byte[] pBuf = new byte[2];
+            pBuf[0] = (byte) val;
+            pBuf[1] = (byte) (val >> 8);
+            return usbSmbWrite(devIndex, addr, (byte)cmd, bPEC, Short.BYTES, pBuf);
+        }
     }
 /*
     public boolean readByte(byte byCommand, byte[] pValue) {
