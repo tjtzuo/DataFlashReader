@@ -59,13 +59,13 @@ public class UsbSmb {
     public short getVersion() {
         return usbGetVersion(devIndex);
     }
-    public boolean readByte(int cmd, byte[] pValue) {
+    public synchronized boolean readByte(int cmd, byte[] pValue) {
         if (bHDQ && cmd < 0x80)
             return usbHdqRead(devIndex, (byte)cmd, pValue);
         else
             return usbSmbRead(devIndex, addr, (byte)cmd, false, Byte.BYTES, pValue);
     }
-    public boolean readBytes(int cmd, int nCount, byte[] pBuf) {
+    public synchronized boolean readBytes(int cmd, int nCount, byte[] pBuf) {
         if (bHDQ && cmd < 0x80) {
             for (int i = 0; i < nCount; i++) {
                 byte[] pVal = new byte[1];
@@ -77,13 +77,13 @@ public class UsbSmb {
         } else
             return usbSmbRead(devIndex, addr, (byte)cmd, false, nCount, pBuf);
     }
-    public boolean readBlock(int cmd, int nCount, byte[] pBuf) {
+    public synchronized boolean readBlock(int cmd, int nCount, byte[] pBuf) {
         byte[] pBlock = new byte[nCount + 1];
         boolean result = usbSmbRead(devIndex, addr, (byte)cmd, bPEC, pBlock.length, pBlock);
         System.arraycopy(pBlock, 1, pBuf, 0, nCount);
         return result && (pBlock[0] <= nCount);
     }
-    public boolean readWord(int cmd, short[] pwValue) {
+    public synchronized boolean readWord(int cmd, short[] pwValue) {
         boolean result = false;
         byte[] pBuf = new byte[2];
         if (bHDQ && cmd < 0x80) {
@@ -98,11 +98,11 @@ public class UsbSmb {
         pwValue[0] = (short) (Byte.toUnsignedInt(pBuf[0]) | (pBuf[1] << 8));
         return result;
     }
-    public boolean sendByte(int cmd) {
+    public synchronized boolean sendByte(int cmd) {
         byte[] pBuf = new byte[1];
 	return usbSmbWrite(devIndex, addr, (byte)cmd, false, 0, pBuf);
     }
-    public boolean writeByte(int cmd, int val) {
+    public synchronized boolean writeByte(int cmd, int val) {
         if (bHDQ && cmd < 0x80) {
             return usbHdqWrite(devIndex, (byte) cmd, (byte) val);
         } else {
@@ -111,7 +111,7 @@ public class UsbSmb {
             return usbSmbWrite(devIndex, addr, (byte) cmd, false, Byte.BYTES, pBuf);
         }
     }
-    public boolean writeBytes(int cmd, int nCount, byte[] pBuf) {
+    public synchronized boolean writeBytes(int cmd, int nCount, byte[] pBuf) {
        if (bHDQ && cmd < 0x80) {
             for (int i = 0; i < nCount; i++)
                 if (!usbHdqWrite(devIndex, (byte) (cmd + i), pBuf[i]))
@@ -120,13 +120,13 @@ public class UsbSmb {
         } else
             return usbSmbWrite(devIndex, addr, (byte)cmd, false, nCount, pBuf);
     }
-    public boolean writeBlock(int cmd, int nCount, byte[] pBuf) {
+    public synchronized boolean writeBlock(int cmd, int nCount, byte[] pBuf) {
         byte[] pBlock = new byte[nCount + 1];
         System.arraycopy(pBuf, 0, pBlock, 1, nCount);
         pBlock[0] = (byte) nCount;
         return usbSmbWrite(devIndex, addr, (byte)cmd, bPEC, pBlock.length, pBlock);
     }
-    public boolean writeWord(int cmd, int val) {
+    public synchronized boolean writeWord(int cmd, int val) {
         if (bHDQ && cmd < 0x80) {
             if (usbHdqWrite(devIndex, (byte)cmd, (byte)-1))
                 if (usbHdqWrite(devIndex, (byte)(cmd + 1), (byte)(val >> 8)))
@@ -482,12 +482,12 @@ public class UsbSmb {
         return (index == 8);
     }
     
-    public static native int usbInit();
-    public static native short usbGetVersion(int nDev);
-    public static native boolean usbSmbWrite(int nDev, byte addr, byte byCommand, boolean bPEC, int len, byte[] pBuf);
-    public static native boolean usbSmbRead(int nDev, byte addr, byte byCommand, boolean bPEC, int len, byte[] pBuf);
-    public static native boolean usbHdqWrite(int nDev, byte byCommand, byte byValue);
-    public static native boolean usbHdqRead(int nDev, byte byCommand, byte[] pValue);
-    public static native boolean usbEepromWrite(int nDev, int loc, byte[] pBuf);
-    public static native boolean usbEepromRead(int nDev, int loc, byte[] pBuf);
+    private native int usbInit();
+    private native short usbGetVersion(int nDev);
+    private native boolean usbSmbWrite(int nDev, byte addr, byte byCommand, boolean bPEC, int len, byte[] pBuf);
+    private native boolean usbSmbRead(int nDev, byte addr, byte byCommand, boolean bPEC, int len, byte[] pBuf);
+    private native boolean usbHdqWrite(int nDev, byte byCommand, byte byValue);
+    private native boolean usbHdqRead(int nDev, byte byCommand, byte[] pValue);
+    private native boolean usbEepromWrite(int nDev, int loc, byte[] pBuf);
+    private native boolean usbEepromRead(int nDev, int loc, byte[] pBuf);
 }
