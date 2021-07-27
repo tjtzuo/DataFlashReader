@@ -12,7 +12,8 @@ import java.util.Arrays;
  * @author joseph
  */
 public class UsbSmb {
-    private int devIndex = -1;
+//    private int devIndex = -1;
+    final int devIndex;
     private byte addr = 0x16;
     private boolean bPEC = false;
     private boolean bHDQ = false;
@@ -52,11 +53,12 @@ public class UsbSmb {
     }
     public UsbSmb() {
         int count = usbInit();
-        devIndex = count - 1;
+//        devIndex = count - 1;
+        devIndex = 0;
         System.out.println("USB SMBus Count: " + count);
     }
     
-    public short getVersion() {
+    public synchronized short getVersion() {
         return usbGetVersion(devIndex);
     }
     public synchronized boolean readByte(int cmd, byte[] pValue) {
