@@ -217,19 +217,23 @@ public class UsbSmb {
         Arrays.fill(sector_buf, (byte)0xFF);
         
         for (index = 0; index < 8; index++) {
-            if (bNewSBS) {
-                for (retry_count = 0; retry_count < retry_end; retry_count++) {
+            for (retry_count = 0; retry_count < retry_end; retry_count++) {
+                if (bNewSBS) {
                     if (writeByteVerify(0x3f, index)) {
                         break;
                     }
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException ex) {
+                } else {
+                    if (writeWordVerify(0x3f, index)) {
+                        break;
                     }
                 }
-                if (retry_count == retry_end) {
-                    break;
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) {
                 }
+            }
+            if (retry_count == retry_end) {
+                break;
             }
             
             Arrays.fill(sbuf, (byte) 0xFF);
@@ -241,7 +245,7 @@ public class UsbSmb {
                 if (bNewSBS) {
                     result = readBytes(0x40, buf.length, buf);
                 } else {
-                    result = readBlock(0x78 + index, buf.length, buf);
+                    result = readBlock(0x40, buf.length, buf);
                 }
                 if (result) {
                     if (Arrays.equals(buf, sbuf)) {
@@ -287,7 +291,7 @@ public class UsbSmb {
                     if (writeByteVerify(0x3e, index))
                         break;
                 } else {
-                    if (writeWordVerify(0x77, index))
+                    if (writeWordVerify(0x3e, index))
                         break;
                 }
                 try {
@@ -333,13 +337,20 @@ public class UsbSmb {
             return false;
         }
         
-        if (bNewSBS) {
+        if (true) {
             int i, j;
             for (i = 0; i < 2; i++) {
                 for (j = 0; j < 4; j++) {
                     for (retry_count = 0; retry_count < retry_end; retry_count++) {
-                        if (writeByteVerify(0x3f, i * 4 + j)) {
-                            break;
+                        int index = i * 4 + j;
+                        if (bNewSBS) {
+                            if (writeByteVerify(0x3f, index)) {
+                                break;
+                            }
+                        } else {
+                            if (writeWordVerify(0x3f, index)) {
+                                break;
+                            }
                         }
                         try {
                             Thread.sleep(10);
@@ -349,30 +360,44 @@ public class UsbSmb {
                     if (retry_count == retry_end) {
                         break;
                     }
-            
+
                     byte[] sbuf = new byte[32];
                     System.arraycopy(sector_buf, (i * 4 + j) * 32, sbuf, 0, sbuf.length);
-                    if (!writeBytes(0x40, sbuf.length, sbuf)) {
-                        break;
+                    if (bNewSBS) {
+                        if (!writeBytes(0x40, sbuf.length, sbuf)) {
+                            break;
+                        }
+                        if (!writeByte(0x60, chksum(sbuf.length, sbuf))) {
+                            break;
+                        }
+                    } else {
+                        if (!writeBlock(0x40, sbuf.length, sbuf)) {
+                            break;
+                        }
                     }
-                    if (!writeByte(0x60, chksum(sbuf.length, sbuf)))
-                        break;
                     
                     try {
-                        if (j == 0) {
+//                        if (j == 0) {
                             Thread.sleep(100);
-                        } else {
-                            Thread.sleep(10);
-                        }
+//                        } else {
+//                            Thread.sleep(10);
+//                        }
                     } catch (InterruptedException ex) {
                     }
                     
                     for (retry_count = 0; retry_count < retry_end; retry_count++) {
                         byte[] buf = new byte[32];
-                        if (readBytes(0x40, buf.length, buf)) {
-                            if (Arrays.equals(buf, sbuf)) {
-                                break;
+                        if (bNewSBS) {
+                            if (!readBytes(0x40, buf.length, buf)) {
+                                continue;
                             }
+                        } else {
+                            if (!readBlock(0x40, buf.length, buf)) {
+                                continue;
+                            }
+                        }
+                        if (Arrays.equals(buf, sbuf)) {
+                            break;
                         }
                     }
                     if (retry_count == retry_end) {
@@ -455,7 +480,7 @@ public class UsbSmb {
                     if (writeByteVerify(0x3e, index))
                         break;
                 } else {
-                    if (writeWordVerify(0x77, index))
+                    if (writeWordVerify(0x3e, index))
                         break;
                 }
                 try {
