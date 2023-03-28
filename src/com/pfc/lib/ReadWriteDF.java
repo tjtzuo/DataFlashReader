@@ -10,8 +10,8 @@ package com.pfc.lib;
  */
 public class ReadWriteDF {
     
-    public static native boolean readDataFlash(int nDev, int loc, byte[] pBuf, boolean bPEC);
-    public static native boolean writeDataFlash(int nDev, int loc, byte[] pBuf, boolean bPEC);
+    public static native boolean readDataFlash(int addr, int loc, byte[] pBuf, boolean bPEC);
+    public static native boolean writeDataFlash(int addr, int loc, byte[] pBuf, boolean bPEC);
     
     static {
         try {
